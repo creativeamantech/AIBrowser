@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">AI Browser</string>
+    <string name="url_hint">Enter URL</string>
+    <string name="go_button">Go</string>
+    <string name="analyze_button">Analyze Page</string>
+    <string name="dialog_title">Page Analysis</string>
+    <string name="ok">OK</string>
+</resources>
