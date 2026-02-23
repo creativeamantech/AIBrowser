@@ -4,18 +4,28 @@ import android.os.Bundle
 import android.webkit.ValueCallback
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.example.ai_browser.model.AIResult
+import com.example.ai_browser.model.LocalAI
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var urlEditText: EditText
     private lateinit var goButton: Button
-    private lateinit var analyzeButton: Button
+    private lateinit var backButton: ImageButton
+    private lateinit var forwardButton: ImageButton
+    private lateinit var clearButton: ImageButton
+    private lateinit var analyzeButton: ExtendedFloatingActionButton
+    private lateinit var progressBar: ProgressBar
     private val localAI = LocalAI()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +35,11 @@ class MainActivity : AppCompatActivity() {
         webView = findViewById(R.id.webview)
         urlEditText = findViewById(R.id.url_edit_text)
         goButton = findViewById(R.id.go_button)
+        backButton = findViewById(R.id.back_button)
+        forwardButton = findViewById(R.id.forward_button)
+        clearButton = findViewById(R.id.clear_button)
         analyzeButton = findViewById(R.id.analyze_button)
+        progressBar = findViewById(R.id.progress_bar)
 
         setupWebView()
         setupListeners()
@@ -38,6 +52,7 @@ class MainActivity : AppCompatActivity() {
                 val url = request.url.toString()
                 view.loadUrl(url)
                 urlEditText.setText(url)
+                updateNavigationButtons()
                 return true
             }
 
@@ -46,10 +61,24 @@ class MainActivity : AppCompatActivity() {
                 if (url != null) {
                     urlEditText.setText(url)
                 }
+                updateNavigationButtons()
+                progressBar.visibility = View.INVISIBLE
+            }
+
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                progressBar.visibility = View.VISIBLE
             }
         }
         // Load a default page
         webView.loadUrl("https://en.wikipedia.org/wiki/Artificial_intelligence")
+    }
+
+    private fun updateNavigationButtons() {
+        backButton.isEnabled = webView.canGoBack()
+        forwardButton.isEnabled = webView.canGoForward()
+        backButton.alpha = if (webView.canGoBack()) 1.0f else 0.5f
+        forwardButton.alpha = if (webView.canGoForward()) 1.0f else 0.5f
     }
 
     private fun setupListeners() {
@@ -64,6 +93,26 @@ class MainActivity : AppCompatActivity() {
             } else {
                 false
             }
+        }
+
+        urlEditText.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) {
+                clearButton.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+
+        clearButton.setOnClickListener {
+            urlEditText.text.clear()
+        }
+
+        backButton.setOnClickListener {
+            if (webView.canGoBack()) webView.goBack()
+        }
+
+        forwardButton.setOnClickListener {
+            if (webView.canGoForward()) webView.goForward()
         }
 
         analyzeButton.setOnClickListener {
@@ -104,16 +153,25 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "No content to analyze", Toast.LENGTH_SHORT).show()
             } else {
                 // Perform local AI analysis
-                val summary = localAI.summarize(text)
-                showAnalysisResult(summary)
+            val result = localAI.analyze(text)
+            showAnalysisResult(result)
             }
         }
     }
 
-    private fun showAnalysisResult(summary: String) {
+    private fun showAnalysisResult(result: AIResult) {
+        val message = buildString {
+            append("## Summary\n${result.summary}\n\n")
+            append("## Keywords\n${result.keywords.joinToString(", ")}\n\n")
+            append("## Sentiment\n${result.sentiment}\n\n")
+            if (result.entities.isNotEmpty()) {
+                append("## Key Entities\n${result.entities.joinToString(", ")}")
+            }
+        }
+
         AlertDialog.Builder(this)
             .setTitle(R.string.dialog_title)
-            .setMessage(summary)
+            .setMessage(message)
             .setPositiveButton(R.string.ok, null)
             .show()
     }

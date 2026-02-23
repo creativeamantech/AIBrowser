@@ -3,6 +3,10 @@
     <string name="url_hint">Enter URL</string>
     <string name="go_button">Go</string>
     <string name="analyze_button">Analyze Page</string>
-    <string name="dialog_title">Page Analysis</string>
+    <string name="dialog_title">AI Analysis Result</string>
     <string name="ok">OK</string>
+    <string name="back">Back</string>
+    <string name="forward">Forward</string>
+    <string name="clear">Clear</string>
+    <string name="loading">Loading...</string>
 </resources>
